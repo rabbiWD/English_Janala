@@ -1,3 +1,28 @@
+// synonym modal
+const createElements =(arr)=>{
+    // console.log(arr);
+    const htmlElements = arr.map(el=> `<span class="btn">${el}</span>`)
+        return htmlElements.join(" ");
+}
+// sound section
+function pronounceWord(word) {
+  const utterance = new SpeechSynthesisUtterance(word);
+  utterance.lang = "en-EN"; // English
+  window.speechSynthesis.speak(utterance);
+}
+
+
+// loading/spinner
+const manageSpinner=(status)=>{
+    if(status == true){
+        document.getElementById('spinner').classList.remove('hidden');
+        document.getElementById('word-container').classList.add('hidden');
+    }else{
+         document.getElementById('word-container').classList.remove('hidden');
+         document.getElementById('spinner').classList.add('hidden');
+    }
+}
+
 const loadLesson=()=>{
     fetch('https://openapi.programming-hero.com/api/levels/all')//promise of response
     .then(res => res.json())// promise of json data
@@ -11,6 +36,7 @@ const removeActive =()=>{
 }
 
 const loadLevelWord=(id)=>{
+    manageSpinner(true);
     // console.log(id);
     const url =`https://openapi.programming-hero.com/api/level/${id}`
     // console.log(url);
@@ -39,9 +65,10 @@ const displayLevelWord = (words)=>{
             <h2 class="font-bold text-4xl">নেক্সট Lesson এ যান</h2>
         </div>
          `
-        return
+         manageSpinner(false)
+        return;
     }
-
+// if word.length != 0 then below cede apply
     words.forEach(word => {
         console.log(word);
         const card = document.createElement('div');
@@ -52,13 +79,13 @@ const displayLevelWord = (words)=>{
             <div class="text-2xl font-medium font-bangla">"${word.meaning ? word.meaning:"অর্থ পাওয়া যায় নি"} / ${word.pronunciation ? word.pronunciation : "pronunciation পাওয়া যায় নি"}"</div>
             <div class="flex justify-between items-center">
                 <button onclick = "loadWordDetail(${word.id})" class="btn bg-[#1A91FF10] hover:bg-[#1A91FF50]"><i class="fa-solid fa-circle-info"></i></button>
-                <button class="btn bg-[#1A91FF10] hover:bg-[#1A91FF50]"><i class="fa-solid fa-volume-high"></i></button>
+                <button onclick="pronounceWord('${word.word}')" class="btn bg-[#1A91FF10] hover:bg-[#1A91FF50]"><i class="fa-solid fa-volume-high"></i></button>
             </div>
         </div>
         `;
-        wordContainer.append(card);
+        wordContainer.append(card); 
     });
-
+    manageSpinner(false)
 }
 
 const loadWordDetail = async(id)=>{
@@ -86,9 +113,7 @@ const displaywordDetails = (word)=>{
      </div>
      <div class="">
       <h2 class="font-bold">Synonym</h2>
-      <span class="">sy1</span>
-      <span class="">sy1</span>
-      <span class="">sy1</span>
+        <div class="">${createElements(word.synonyms)}</div>
     </div>
     
     `
@@ -106,11 +131,27 @@ const displayLesson = (lessons) =>{
          const btnDiv = document.createElement('div');
          btnDiv.innerHTML = `
          <button id="lesson-btn-${lesson.level_no}" 
-         onclick ="loadLevelWord(${lesson.level_no})" class="btn btn-outline btn-primary lesson-btn"><i class="fa-solid fa-book-open"></i>Lesson - ${lesson.level_no}</button>
+         onclick="loadLevelWord(${lesson.level_no})" class="btn btn-outline btn-primary lesson-btn"><i class="fa-solid fa-book-open"></i>Lesson - ${lesson.level_no}</button>
          `
     // 4. append into container
         levelContainer.append(btnDiv)
-    }
+    } 
 }
 
-loadLesson()
+loadLesson();
+// Inpur search btn
+document.getElementById('btn-search').addEventListener("click",()=>{
+    removeActive();
+    const input = document.getElementById('input-search');
+    const searchValue = input.value.trim().toLowerCase();
+    console.log(searchValue);
+
+    fetch('https://openapi.programming-hero.com/api/words/all')
+    .then(res=>res.json())
+    .then((data)=>{
+        const allWords = data.data;
+        console.log(allWords);
+        const filterWords = allWords.filter(word=> word.word.toLowerCase().includes(searchValue));
+        displayLevelWord(filterWords)
+    })
+})
